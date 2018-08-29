@@ -1,0 +1,37 @@
+{
+  "name": "particles-webgl",
+  "version": "0.0.0",
+  "description": "",
+  "main": "build/src/index.js",
+  "types": "build/src/index.d.ts",
+  "files": [
+    "build/src"
+  ],
+  "license": "MIT",
+  "keywords": [],
+  "scripts": {
+    "check": "gts check",
+    "clean": "gts clean",
+    "compile": "tsc -p .",
+    "fix": "gts fix",
+    "prepare": "npm run compile",
+    "pretest": "npm run compile",
+    "posttest": "npm run check",
+    "start": "webpack-dev-server -d --config webpack.config.js"
+  },
+  "devDependencies": {
+    "@types/gl-matrix": "^2.4.1",
+    "@types/node": "^10.9.2",
+    "gts": "^0.8.0",
+    "html-webpack-plugin": "^3.2.0",
+    "ts-loader": "^4.5.0",
+    "typescript": "~2.8.0",
+    "webpack": "^4.17.1",
+    "webpack-cli": "^3.1.0",
+    "webpack-command": "^0.4.1",
+    "webpack-dev-server": "^3.1.6"
+  },
+  "dependencies": {
+    "gl-matrix": "^2.7.1"
+  }
+}
