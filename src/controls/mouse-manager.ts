@@ -10,7 +10,7 @@ export class MouseManager {
 
    constructor(private canvas: HTMLCanvasElement) {
       this.canvas.onclick = () => canvas.requestPointerLock();
-      this.canvas.addEventListener("mousemove", this.updatePosition);      
+      this.canvas.addEventListener("mousemove", this.updatePosition);
    }
 
    get currentCoordinates() {
@@ -29,9 +29,5 @@ export class MouseManager {
             dx: e.movementX,
             dy: e.movementY
       }));
-   }
-
-   public addMouseMovedCallback(callback: MouseMovedCallback) {
-      this._onMouseMovedCallbacks.push(callback);
    }
 }
