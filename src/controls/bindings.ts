@@ -1,13 +1,13 @@
-import { KeyCodes } from "./keyboard/keycodes";
+import { KEY_CODES } from "./keyboard/keycodes";
 import { Action } from "./actions";
 
-export const Bindings = new Map([
-   [ KeyCodes.W, Action.MoveForward ],
-   [ KeyCodes.A, Action.MoveLeft ],
-   [ KeyCodes.S, Action.MoveBack ],
-   [ KeyCodes.D, Action.MoveRight ],
-   [ KeyCodes.Ctrl, Action.MoveDown ],
-   [ KeyCodes.Space, Action.MoveUp ],
-   [ KeyCodes.Q, Action.RollLeft ],
-   [ KeyCodes.E, Action.RollRight ],
+export const BINDINGS = new Map([
+  [KEY_CODES.W, Action.MoveForward],
+  [KEY_CODES.A, Action.MoveLeft],
+  [KEY_CODES.S, Action.MoveBack],
+  [KEY_CODES.D, Action.MoveRight],
+  [KEY_CODES.Shift, Action.MoveDown],
+  [KEY_CODES.Space, Action.MoveUp],
+  [KEY_CODES.Q, Action.RollLeft],
+  [KEY_CODES.E, Action.RollRight]
 ]);

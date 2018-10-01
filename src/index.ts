@@ -1,24 +1,29 @@
-import { vec3 } from 'gl-matrix';
-import vertCode from './shaders/test.vert';
-import fragCode from './shaders/test.frag';
-import { MouseManager } from './controls/mouse-manager';
-import { createParticlesCube } from './particles-factory';
-import { Camera } from './camera/camera';
+import { vec3 } from "gl-matrix";
+import vertCode from "./shaders/test.vert";
+import fragCode from "./shaders/test.frag";
+import { MouseManager } from "./controls/mouse-manager";
+import { createParticlesCube } from "./particles-factory";
+import { Camera } from "./camera/camera";
+import { KeyboardManager } from "./controls/keyboard/keyboard-manager";
+import { User } from "./controls/user";
+import { Action } from "./controls/actions";
+import { Direction } from "./controls/direction";
 
 const FLOAT_BYTES = 4;
 const PARTICLES_COUNT = 10000;
 const ROTATION_SPEED = 0.01;
+const TRANSLATION_SPEED = 0.01;
 
 let canvas: HTMLCanvasElement = null;
 let gl: WebGLRenderingContext = null;
-let mouseManager: MouseManager = null;
 let program: WebGLProgram = null;
 let camera: Camera = null;
+let user: User = null;
 
 let particlesVertexBuffer: WebGLBuffer;
 
 function createParticlesBuffer() {
-  var vertices = createParticlesCube(PARTICLES_COUNT);
+  const vertices = createParticlesCube(PARTICLES_COUNT);
   particlesVertexBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, particlesVertexBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
@@ -36,30 +41,29 @@ function ensureCompileStatusOk(gl: WebGLRenderingContext, shader: WebGLShader) {
 function initialize() {
   canvas = document.getElementById("glCanvas") as HTMLCanvasElement;
 
-  gl = canvas.getContext("webgl2", { antialias: false }) as WebGLRenderingContext;
+  gl = canvas.getContext("webgl2", {
+    antialias: false
+  }) as WebGLRenderingContext;
   if (gl === null) {
-    alert("Unable to initialize WebGL. Your browser or machine may not support it.");
+    alert(
+      "Unable to initialize WebGL. Your browser or machine may not support it."
+    );
     return;
   }
 
   createParticlesBuffer();
 
-  mouseManager = new MouseManager(canvas);
+  const mouseManager = new MouseManager(canvas);
+  const keyboardManager = new KeyboardManager(canvas);
+  user = new User(mouseManager, keyboardManager);
+
   camera = new Camera(
-    vec3.fromValues(0.0, 0.0, 2.0),  // Position
+    vec3.fromValues(0.0, 0.0, 2.0), // Position
     vec3.fromValues(0.0, 0.0, -1.0), // Front
     vec3.fromValues(0.0, 1.0, 0.0), // Up
     45.0, // Fov
-    canvas.width / canvas.height); // Aspect ratio
-  mouseManager.addMouseMovedCallback(e => {
-    camera.rotate({
-      pitch: e.dy * ROTATION_SPEED,
-      yaw: e.dx * ROTATION_SPEED,
-      roll: 0
-    })
-  });
-
-  camera.rotate({ pitch: 0.0, yaw: 0.0, roll: 0.0 });
+    canvas.width / canvas.height
+  ); // Aspect ratio
 
   const vertShader = gl.createShader(gl.VERTEX_SHADER);
   gl.shaderSource(vertShader, vertCode);
@@ -84,12 +88,52 @@ function initialize() {
 }
 
 function render() {
+  const mouseEvents = user.consumeMouseEvents();
+  mouseEvents.forEach(e => {
+    camera.rotate({
+      pitch: e.dy * -ROTATION_SPEED,
+      yaw: e.dx * -ROTATION_SPEED,
+      roll: 0
+    });
+  });
+
+  const actions = user.activeActions();
+  actions.forEach(action => {
+    switch (action) {
+      case Action.MoveForward:
+        camera.moveInDirection(Direction.Forward, TRANSLATION_SPEED);
+        break;
+      case Action.MoveBack:
+        camera.moveInDirection(Direction.Back, TRANSLATION_SPEED);
+        break;
+      case Action.MoveLeft:
+        camera.moveInDirection(Direction.Left, TRANSLATION_SPEED);
+        break;
+      case Action.MoveRight:
+        camera.moveInDirection(Direction.Right, TRANSLATION_SPEED);
+        break;
+      case Action.MoveUp:
+        camera.moveInDirection(Direction.Up, TRANSLATION_SPEED);
+        break;
+      case Action.MoveDown:
+        camera.moveInDirection(Direction.Down, TRANSLATION_SPEED);
+        break;
+      case Action.RollLeft:
+        camera.rotate({ roll: ROTATION_SPEED });
+        break;
+      case Action.RollRight:
+        camera.rotate({ roll: -ROTATION_SPEED });
+      default:
+        break;
+    }
+  });
+
   const mousePos = gl.getUniformLocation(program, "mousePos");
-  gl.uniform2fv(mousePos, mouseManager.currentCoordinates);
+  gl.uniform2fv(mousePos, user.cursorPosition);
   const camPos = gl.getUniformLocation(program, "camPos");
   gl.uniform3fv(camPos, camera.position);
 
-  const mvp = gl.getUniformLocation(program, 'MVP');
+  const mvp = gl.getUniformLocation(program, "MVP");
   gl.uniformMatrix4fv(mvp, false, camera.viewProjectionMatrix);
 
   // Set clear color to black, fully opaque
@@ -103,10 +147,17 @@ function render() {
   // Draw the triangle
 
   gl.bindBuffer(gl.ARRAY_BUFFER, particlesVertexBuffer);
-  const posAttribute = gl.getAttribLocation(program, 'pos');
-  const colorAttribute = gl.getAttribLocation(program, 'pointColor');
+  const posAttribute = gl.getAttribLocation(program, "pos");
+  const colorAttribute = gl.getAttribLocation(program, "pointColor");
   gl.vertexAttribPointer(posAttribute, 3, gl.FLOAT, true, 6 * FLOAT_BYTES, 0);
-  gl.vertexAttribPointer(colorAttribute, 3, gl.FLOAT, true, 6 * FLOAT_BYTES, 3 * FLOAT_BYTES);
+  gl.vertexAttribPointer(
+    colorAttribute,
+    3,
+    gl.FLOAT,
+    true,
+    6 * FLOAT_BYTES,
+    3 * FLOAT_BYTES
+  );
   gl.enableVertexAttribArray(posAttribute);
   gl.enableVertexAttribArray(colorAttribute);
 
