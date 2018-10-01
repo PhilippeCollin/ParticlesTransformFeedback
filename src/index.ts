@@ -6,8 +6,6 @@ import { createParticlesCube } from "./particles-factory";
 import { Camera } from "./camera/camera";
 import { KeyboardManager } from "./controls/keyboard/keyboard-manager";
 import { User } from "./controls/user";
-import { Action } from "./controls/actions";
-import { Direction } from "./controls/direction";
 
 const FLOAT_BYTES = 4;
 const PARTICLES_COUNT = 10000;
@@ -17,7 +15,6 @@ const TRANSLATION_SPEED = 0.01;
 let canvas: HTMLCanvasElement = null;
 let gl: WebGLRenderingContext = null;
 let program: WebGLProgram = null;
-let camera: Camera = null;
 let user: User = null;
 
 let particlesVertexBuffer: WebGLBuffer;
@@ -55,15 +52,20 @@ function initialize() {
 
   const mouseManager = new MouseManager(canvas);
   const keyboardManager = new KeyboardManager(canvas);
-  user = new User(mouseManager, keyboardManager);
-
-  camera = new Camera(
+  const camera = new Camera(
     vec3.fromValues(0.0, 0.0, 2.0), // Position
     vec3.fromValues(0.0, 0.0, -1.0), // Front
     vec3.fromValues(0.0, 1.0, 0.0), // Up
     45.0, // Fov
     canvas.width / canvas.height
   ); // Aspect ratio
+  user = new User(
+    mouseManager,
+    keyboardManager,
+    camera,
+    TRANSLATION_SPEED,
+    ROTATION_SPEED
+  );
 
   const vertShader = gl.createShader(gl.VERTEX_SHADER);
   gl.shaderSource(vertShader, vertCode);
@@ -88,53 +90,15 @@ function initialize() {
 }
 
 function render() {
-  const mouseEvents = user.consumeMouseEvents();
-  mouseEvents.forEach(e => {
-    camera.rotate({
-      pitch: e.dy * -ROTATION_SPEED,
-      yaw: e.dx * -ROTATION_SPEED,
-      roll: 0
-    });
-  });
-
-  const actions = user.activeActions();
-  actions.forEach(action => {
-    switch (action) {
-      case Action.MoveForward:
-        camera.moveInDirection(Direction.Forward, TRANSLATION_SPEED);
-        break;
-      case Action.MoveBack:
-        camera.moveInDirection(Direction.Back, TRANSLATION_SPEED);
-        break;
-      case Action.MoveLeft:
-        camera.moveInDirection(Direction.Left, TRANSLATION_SPEED);
-        break;
-      case Action.MoveRight:
-        camera.moveInDirection(Direction.Right, TRANSLATION_SPEED);
-        break;
-      case Action.MoveUp:
-        camera.moveInDirection(Direction.Up, TRANSLATION_SPEED);
-        break;
-      case Action.MoveDown:
-        camera.moveInDirection(Direction.Down, TRANSLATION_SPEED);
-        break;
-      case Action.RollLeft:
-        camera.rotate({ roll: ROTATION_SPEED });
-        break;
-      case Action.RollRight:
-        camera.rotate({ roll: -ROTATION_SPEED });
-      default:
-        break;
-    }
-  });
+  user.update();
 
   const mousePos = gl.getUniformLocation(program, "mousePos");
   gl.uniform2fv(mousePos, user.cursorPosition);
   const camPos = gl.getUniformLocation(program, "camPos");
-  gl.uniform3fv(camPos, camera.position);
+  gl.uniform3fv(camPos, user.camera.position);
 
   const mvp = gl.getUniformLocation(program, "MVP");
-  gl.uniformMatrix4fv(mvp, false, camera.viewProjectionMatrix);
+  gl.uniformMatrix4fv(mvp, false, user.camera.viewProjectionMatrix);
 
   // Set clear color to black, fully opaque
   gl.clearColor(0.0, 0.0, 0.0, 1.0);
